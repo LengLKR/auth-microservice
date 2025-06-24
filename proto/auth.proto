@@ -13,6 +13,9 @@ service AuthService {
   rpc GetProfile   (GetProfileRequest)   returns (User);  
   rpc UpdateProfile(UpdateProfileRequest) returns (User);
   rpc DeleteProfile(DeleteProfileRequest) returns (Empty);
+  //Password Reset
+  rpc RequestPasswordReset(PasswordResetRequest) returns (Empty);
+  rpc ResetPassword       (ResetPasswordRequest)  returns (Empty);
 }
 
 message RegisterRequest {
@@ -63,5 +66,15 @@ message UpdateProfileRequest {
 }
 
 message DeleteProfileRequest {
-    string id = 1;
+    string id         = 1;
+}
+
+message PasswordResetRequest {
+  string email        = 1;
+}
+
+message ResetPasswordRequest {
+  string token        = 1;
+  string new_password = 2;
+
 }

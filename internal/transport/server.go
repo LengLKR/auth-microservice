@@ -94,6 +94,21 @@ func (s *Server) DeleteProfile(ctx context.Context, req *pb.DeleteProfileRequest
     return &pb.Empty{}, nil
 }
 
+// RequestPasswordReset สั่งสร้าง reset token
+func (s *Server) RequestPasswordReset(ctx context.Context, req *pb.PasswordResetRequest) (*pb.Empty, error) {
+    if err := s.authSvc.RequestPasswordReset(ctx, req.Email); err != nil {
+        return nil, err
+    }
+    return &pb.Empty{}, nil
+}
+
+// ResetPassword ตรวจ token และรีเซ็ตรหัสผ่าน
+func (s *Server) ResetPassword(ctx context.Context, req *pb.ResetPasswordRequest) (*pb.Empty, error) {
+    if err := s.authSvc.ResetPassword(ctx, req.Token, req.NewPassword); err != nil {
+        return nil, err
+    }
+    return &pb.Empty{}, nil
+}
 
 // RegisterAuthServiceServer ช่วย register ใน main.go
 func RegisterAuthServiceServer(grpcServer *grpc.Server, srv pb.AuthServiceServer) {

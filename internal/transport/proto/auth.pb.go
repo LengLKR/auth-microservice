@@ -570,6 +570,102 @@ func (x *DeleteProfileRequest) GetId() string {
 	return ""
 }
 
+type PasswordResetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PasswordResetRequest) Reset() {
+	*x = PasswordResetRequest{}
+	mi := &file_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PasswordResetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PasswordResetRequest) ProtoMessage() {}
+
+func (x *PasswordResetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PasswordResetRequest.ProtoReflect.Descriptor instead.
+func (*PasswordResetRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *PasswordResetRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type ResetPasswordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	NewPassword   string                 `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetPasswordRequest) Reset() {
+	*x = ResetPasswordRequest{}
+	mi := &file_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetPasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetPasswordRequest) ProtoMessage() {}
+
+func (x *ResetPasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetPasswordRequest.ProtoReflect.Descriptor instead.
+func (*ResetPasswordRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ResetPasswordRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *ResetPasswordRequest) GetNewPassword() string {
+	if x != nil {
+		return x.NewPassword
+	}
+	return ""
+}
+
 var File_auth_proto protoreflect.FileDescriptor
 
 const file_auth_proto_rawDesc = "" +
@@ -608,7 +704,12 @@ const file_auth_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\"&\n" +
 	"\x14DeleteProfileRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id2\x85\x03\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\",\n" +
+	"\x14PasswordResetRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"O\n" +
+	"\x14ResetPasswordRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12!\n" +
+	"\fnew_password\x18\x02 \x01(\tR\vnewPassword2\x80\x04\n" +
 	"\vAuthService\x125\n" +
 	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x12.auth.AuthResponse\x12/\n" +
 	"\x05Login\x12\x12.auth.LoginRequest\x1a\x12.auth.AuthResponse\x12*\n" +
@@ -619,7 +720,9 @@ const file_auth_proto_rawDesc = "" +
 	".auth.User\x127\n" +
 	"\rUpdateProfile\x12\x1a.auth.UpdateProfileRequest\x1a\n" +
 	".auth.User\x128\n" +
-	"\rDeleteProfile\x12\x1a.auth.DeleteProfileRequest\x1a\v.auth.EmptyBEZCgithub.com/LengLKR/auth-microservice/internal/transport/proto;protob\x06proto3"
+	"\rDeleteProfile\x12\x1a.auth.DeleteProfileRequest\x1a\v.auth.Empty\x12?\n" +
+	"\x14RequestPasswordReset\x12\x1a.auth.PasswordResetRequest\x1a\v.auth.Empty\x128\n" +
+	"\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\v.auth.EmptyBEZCgithub.com/LengLKR/auth-microservice/internal/transport/proto;protob\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once
@@ -633,7 +736,7 @@ func file_auth_proto_rawDescGZIP() []byte {
 	return file_auth_proto_rawDescData
 }
 
-var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_auth_proto_goTypes = []any{
 	(*RegisterRequest)(nil),      // 0: auth.RegisterRequest
 	(*LoginRequest)(nil),         // 1: auth.LoginRequest
@@ -646,6 +749,8 @@ var file_auth_proto_goTypes = []any{
 	(*GetProfileRequest)(nil),    // 8: auth.GetProfileRequest
 	(*UpdateProfileRequest)(nil), // 9: auth.UpdateProfileRequest
 	(*DeleteProfileRequest)(nil), // 10: auth.DeleteProfileRequest
+	(*PasswordResetRequest)(nil), // 11: auth.PasswordResetRequest
+	(*ResetPasswordRequest)(nil), // 12: auth.ResetPasswordRequest
 }
 var file_auth_proto_depIdxs = []int32{
 	5,  // 0: auth.ListUsersResponse.users:type_name -> auth.User
@@ -656,15 +761,19 @@ var file_auth_proto_depIdxs = []int32{
 	8,  // 5: auth.AuthService.GetProfile:input_type -> auth.GetProfileRequest
 	9,  // 6: auth.AuthService.UpdateProfile:input_type -> auth.UpdateProfileRequest
 	10, // 7: auth.AuthService.DeleteProfile:input_type -> auth.DeleteProfileRequest
-	3,  // 8: auth.AuthService.Register:output_type -> auth.AuthResponse
-	3,  // 9: auth.AuthService.Login:output_type -> auth.AuthResponse
-	4,  // 10: auth.AuthService.Logout:output_type -> auth.Empty
-	7,  // 11: auth.AuthService.ListUsers:output_type -> auth.ListUsersResponse
-	5,  // 12: auth.AuthService.GetProfile:output_type -> auth.User
-	5,  // 13: auth.AuthService.UpdateProfile:output_type -> auth.User
-	4,  // 14: auth.AuthService.DeleteProfile:output_type -> auth.Empty
-	8,  // [8:15] is the sub-list for method output_type
-	1,  // [1:8] is the sub-list for method input_type
+	11, // 8: auth.AuthService.RequestPasswordReset:input_type -> auth.PasswordResetRequest
+	12, // 9: auth.AuthService.ResetPassword:input_type -> auth.ResetPasswordRequest
+	3,  // 10: auth.AuthService.Register:output_type -> auth.AuthResponse
+	3,  // 11: auth.AuthService.Login:output_type -> auth.AuthResponse
+	4,  // 12: auth.AuthService.Logout:output_type -> auth.Empty
+	7,  // 13: auth.AuthService.ListUsers:output_type -> auth.ListUsersResponse
+	5,  // 14: auth.AuthService.GetProfile:output_type -> auth.User
+	5,  // 15: auth.AuthService.UpdateProfile:output_type -> auth.User
+	4,  // 16: auth.AuthService.DeleteProfile:output_type -> auth.Empty
+	4,  // 17: auth.AuthService.RequestPasswordReset:output_type -> auth.Empty
+	4,  // 18: auth.AuthService.ResetPassword:output_type -> auth.Empty
+	10, // [10:19] is the sub-list for method output_type
+	1,  // [1:10] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -681,7 +790,7 @@ func file_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_proto_rawDesc), len(file_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

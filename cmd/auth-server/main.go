@@ -6,6 +6,7 @@ import (
 	"github.com/joho/godotenv"
     "github.com/LengLKR/auth-microservice/config"
     "github.com/LengLKR/auth-microservice/internal/repository"
+	pr "github.com/LengLKR/auth-microservice/internal/repository/password_reset"
     "github.com/LengLKR/auth-microservice/internal/service"
     "github.com/LengLKR/auth-microservice/internal/transport"
     "google.golang.org/grpc"
@@ -32,9 +33,19 @@ func main(){
 	//สร้าง token repository สำหรับ Logout blacklist
 	tokenCol := db.Collection("invalidated_tokens")
 	tokenRepo := repository.NewMongoTokenRepository(tokenCol)
+
+	// Password reset repo
+    resetCol := db.Collection("password_resets")
+    resetRepo := pr.NewMongoResetRepo(resetCol)
+
 	
 	// สร้าง AuthService พร้อมทั้ง userRepo, tokenRepo, และ jwtSecret
-	authSvc := service.NewAuthService(userRepo, tokenRepo, cfg.JWTSecret)
+	authSvc := service.NewAuthService(
+        userRepo,
+        tokenRepo,
+        resetRepo,
+        cfg.JWTSecret,
+    )
 
 
 	// สร้าง gRPC server และ register
@@ -51,5 +62,4 @@ func main(){
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
 }
