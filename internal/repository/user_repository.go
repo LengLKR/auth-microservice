@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options" 
 	"github.com/LengLKR/auth-microservice/internal/domain"
-
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 //Userrepository is inter for user data access
@@ -48,8 +48,17 @@ func NewMongoUserRepository(col *mongo.Collection) UserRepository {
 
 func (r *mongoUserRepo) Create(u *domain.User) error {
 	u.CreatedAt = time.Now()
-	_, err := r.col.InsertOne(context.Background(), u)
-	return err
+	res, err := r.col.InsertOne(context.Background(), u)
+	if err != nil {
+		return err
+	}
+	// เอา ObjectID ที่ Mongo สร้างมาเก็บกลับเข้าไปใน u.ID (เป็น hex string)
+    oid, ok := res.InsertedID.(primitive.ObjectID)
+    if !ok {
+        return errors.New("failed to cast inserted ID to ObjectID")
+    }
+    u.ID = oid.Hex()
+    return nil
 }
 
 func (r *mongoUserRepo) FindByEmail(email string) (*domain.User, error) {
@@ -98,23 +107,35 @@ func (r *mongoUserRepo) FindAll(filterName, filterEmail string, page, size int) 
 // FindByID returns a single user by ID excluding soft-deleted.
 func (r *mongoUserRepo) FindByID(id string) (*domain.User, error) {
     ctx := context.Background()
-    filter := bson.M{"_id": id, "deletedAt": bson.M{"$exists": false}}
+    objID, err := primitive.ObjectIDFromHex(id)
+    if err != nil {
+        return nil, errors.New("invalid user ID format")
+    }
+    filter := bson.M{
+        "_id":       objID,
+        "deletedAt": bson.M{"$exists": false},
+    }
     var u domain.User
-    err := r.col.FindOne(ctx, filter).Decode(&u)
+    err = r.col.FindOne(ctx, filter).Decode(&u)
     if err == mongo.ErrNoDocuments {
         return nil, errors.New("user not found")
     }
     return &u, err
 }
 
+
 // Update modifies allowed fields of a user.
 func (r *mongoUserRepo) Update(u *domain.User) error {
-    _, err := r.col.UpdateOne(
+    objID, err := primitive.ObjectIDFromHex(u.ID)
+    if err != nil {
+        return errors.New("invalid user ID format")
+    }
+    _, err = r.col.UpdateOne(
         context.Background(),
-        bson.M{"_id": u.ID},
+        bson.M{"_id": objID},
         bson.M{"$set": bson.M{
             "email": u.Email,
-            // เพิ่มฟิลด์อื่นๆ ที่อนุญาตตามต้องการ
+            // เพิ่มฟิลด์อื่นๆ ตามต้องการ
         }},
     )
     return err
@@ -122,9 +143,13 @@ func (r *mongoUserRepo) Update(u *domain.User) error {
 
 // SoftDelete marks a user as deleted by setting deletedAt.
 func (r *mongoUserRepo) SoftDelete(id string) error {
-    _, err := r.col.UpdateOne(
+    objID, err := primitive.ObjectIDFromHex(id)
+    if err != nil {
+        return errors.New("invalid user ID format")
+    }
+    _, err = r.col.UpdateOne(
         context.Background(),
-        bson.M{"_id": id},
+        bson.M{"_id": objID},
         bson.M{"$set": bson.M{"deletedAt": time.Now()}},
     )
     return err

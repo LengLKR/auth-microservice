@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/LengLKR/auth-microservice/internal/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/metadata"
 )
 
 // AuthService stub ของ service layer
@@ -46,37 +48,36 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (str
 
 // Login ตรวจ credentials แล้วคืน JWT
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, error) {
-
-    // กดล็อก mutex
     s.mu.Lock()
-    // ให้ UnLock อัตโนมัติเมื่อ return ออกจากบล็อกนี้
+    // ปลดล็อกเมื่อออกจากฟังก์ชันเสมอ
     defer s.mu.Unlock()
 
-    // Rate limiting: สูงสุด 5 attempts ใน 1 นาที
+    // Rate limiting: สูงสุด 5 failed attempts ใน 1 นาที
     now := time.Now()
-    arr := append(s.attempts[email], now)
-    valid := make([]time.Time, 0, len(arr))
-	
-    for _, t0 := range arr {
-        if now.Sub(t0) < time.Minute {
-            valid = append(valid, t0)
+    attempts := s.attempts[email]
+    // กรองเฉพาะ attempts ที่ยังไม่เกิน 1 นาที
+    var recent []time.Time
+    for _, ts := range attempts {
+        if now.Sub(ts) < time.Minute {
+            recent = append(recent, ts)
         }
     }
-    s.attempts[email] = valid
-    if len(valid) >= 5 {
+    // อัปเดต map ด้วย recent attempts
+    s.attempts[email] = recent
+
+    if len(recent) >= 5 {
         return "", errors.New("too many login attempts; please try again later")
     }
 
-    // ตรวจสอบ credential
+    // ตรวจสอบ credentials
     user, err := s.repo.FindByEmail(email)
-    if err != nil {
-        return "", errors.New("invalid credentials")
-    }
-    if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
+    if err != nil || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
+        // เพิ่ม failed attempt ทันทีภายใต้ล็อก
+        s.attempts[email] = append(s.attempts[email], now)
         return "", errors.New("invalid credentials")
     }
 
-    // ถ้า login สำเร็จ ให้เคลียร์ attempts (อยู่ภายนอก mutex หรือ lock ใหม่ก็ได้)
+    // ถ้าสำเร็จ ลบประวัติ attempts ทั้งหมด
     delete(s.attempts, email)
 
     return s.generateToken(user.ID)
@@ -96,6 +97,99 @@ func (s *AuthService) Logout(ctx context.Context, rawToken string) error {
         return errors.New("invalid token")
     }
     return s.tokenRepo.Blacklist(rawToken, claims.ExpiresAt.Time)
+}
+
+//ListUsers ดึงรายชื่อผู้ใช้พร้อม filter + pagination
+ func (s *AuthService) ListUsers(ctx context.Context, filterName, filterEmail string, page, size int) ([]domain.User, int64, error){
+	//ถ้าอยากจำกัดเฉพาะ admin ให้ เช็ค metadata จาก ctx ตรงนี้
+	users, total, err := s.repo.FindAll(filterName, filterEmail, page, size)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := make([]domain.User, len(users))
+	for i, u := range users {
+		out[i] = *u
+	}
+	return out, total, nil
+}
+
+// GetProfile ดึง profile ของตัวเอง
+func (s *AuthService) GetProfile(ctx context.Context, id string) (domain.User, error) {
+    sub, err := s.subjectFromCtx(ctx)
+    if err != nil {
+        return domain.User{}, err
+    }
+    if sub != id {
+        return domain.User{}, errors.New("permission denied")
+    }
+    u, err := s.repo.FindByID(id)
+    if err != nil {
+        return domain.User{}, err
+    }
+    return *u, nil
+}
+
+// UpdateProfile ให้แก้ไข email (หรือ field อื่นได้ตามต้องการ)
+func (s *AuthService) UpdateProfile(ctx context.Context, id, email string) (domain.User, error) {
+    sub, err := s.subjectFromCtx(ctx)
+    if err != nil {
+        return domain.User{}, err
+    }
+    if sub != id {
+        return domain.User{}, errors.New("permission denied")
+    }
+    u, err := s.repo.FindByID(id)
+    if err != nil {
+        return domain.User{}, err
+    }
+    u.Email = email
+    if err := s.repo.Update(u); err != nil {
+        return domain.User{}, err
+    }
+    return *u, nil
+}
+
+// DeleteProfile ทำ soft delete
+func (s *AuthService) DeleteProfile(ctx context.Context, id string) error {
+    sub, err := s.subjectFromCtx(ctx)
+	
+    if err != nil {
+        return err
+    }
+    if sub != id {
+        return errors.New("permission denied")
+    }
+    return s.repo.SoftDelete(id)
+
+}
+
+
+// subjectFromCtx ดึง JWT subject จาก metadata: "authorization: Bearer <token>"
+func (s *AuthService) subjectFromCtx(ctx context.Context) (string, error) {
+    md, ok := metadata.FromIncomingContext(ctx)
+    if !ok {
+        return "", errors.New("missing metadata")
+    }
+    auth := md["authorization"]
+    if len(auth) == 0 {
+        return "", errors.New("missing authorization header")
+    }
+    parts := strings.SplitN(auth[0], " ", 2)
+    if len(parts) != 2 {
+        return "", errors.New("invalid authorization format")
+    }
+    raw := parts[1]
+    tok, err := jwt.ParseWithClaims(raw, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
+        return []byte(s.jwtSecret), nil
+    })
+    if err != nil {
+        return "", err
+    }
+    claims, ok := tok.Claims.(*jwt.RegisteredClaims)
+    if !ok || !tok.Valid {
+        return "", errors.New("invalid token")
+    }
+    return claims.Subject, nil
 }
 
 // generateToken สร้าง JWT ด้วย HS256
