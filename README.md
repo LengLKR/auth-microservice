@@ -1,3 +1,5 @@
+[![Go](https://img.shields.io/badge/go-1.20+-00ADD8?logo=go)]()
+[![License](https://img.shields.io/badge/license-MIT-blue)]()
 # Auth Microservice
 
 ## Overview
@@ -30,7 +32,7 @@ Authentication & User Management microservice built with:
    cd auth-microservice
    ```
 
-2. **Environment variables**\
+2. **Environment variables**  
    Create a `.env` file in project root:
 
    ```dotenv
@@ -71,19 +73,45 @@ Authentication & User Management microservice built with:
 
 ---
 
-## API Usage (examples with `grpcurl` / Postman GRPC)
+## Error Response Format
 
-(examples with `grpcurl` / Postman GRPC)
+All error responses follow the gRPC standard error shape:
+
+```json
+{
+  "code": <gRPC status code>,
+  "message": "<error message>",
+  "details": []
+}
+```
+
+- `code`: integer gRPC code (e.g., `3` = INVALID_ARGUMENT, `5` = NOT_FOUND, `6` = ALREADY_EXISTS, `7` = PERMISSION_DENIED)
+- `message`: descriptive error message
+
+### Example: `Register` error (already exists)
+```bash
+grpcurl -plaintext -d '{"email":"alice@example.com","password":"P@ssw0rd!"}' localhost:50051 auth.AuthService/Register
+
+Status code: 2 UNKNOWN
+Time: 31 ms
+details: write exception: write errors: [E11000 duplicate key error collection: authdb.users index: email_1 dup key: { email: "alice@example.com" }]
+```
+
+See full spec in [docs/API.md](doce/API.md).
+
+---
+
+## API Usage (examples with `grpcurl` / Postman GRPC)
 
 ### 1. Register
 
-```
+```bash
 grpcurl -plaintext -d '{"email":"alice@example.com","password":"P@ssw0rd!"}' localhost:50051 auth.AuthService/Register
 ```
 
 ### 2. Login
 
-```
+```bash
 grpcurl -plaintext -d '{"email":"alice@example.com","password":"P@ssw0rd!"}' localhost:50051 auth.AuthService/Login
 ```
 
@@ -91,7 +119,7 @@ grpcurl -plaintext -d '{"email":"alice@example.com","password":"P@ssw0rd!"}' loc
 
 ### 3. List Users
 
-```
+```bash
 grpcurl -plaintext \
   -H 'authorization: Bearer <JWT_TOKEN>' \
   -d '{"filterName":"","filterEmail":"","page":1,"size":10}' \
@@ -100,7 +128,7 @@ grpcurl -plaintext \
 
 ### 4. Get Profile
 
-```
+```bash
 grpcurl -plaintext \
   -H 'authorization: Bearer <JWT_TOKEN>' \
   -d '{"id":"<USER_ID>"}' \
@@ -109,7 +137,7 @@ grpcurl -plaintext \
 
 ### 5. Update Profile
 
-```
+```bash
 grpcurl -plaintext \
   -H 'authorization: Bearer <JWT_TOKEN>' \
   -d '{"id":"<USER_ID>","email":"new@example.com"}' \
@@ -118,7 +146,7 @@ grpcurl -plaintext \
 
 ### 6. Delete Profile
 
-```
+```bash
 grpcurl -plaintext \
   -H 'authorization: Bearer <JWT_TOKEN>' \
   -d '{"id":"<USER_ID>"}' \
@@ -127,7 +155,7 @@ grpcurl -plaintext \
 
 ### 7. Request Password Reset
 
-```
+```bash
 grpcurl -plaintext -d '{"email":"alice@example.com"}' localhost:50051 auth.AuthService/RequestPasswordReset
 ```
 
@@ -135,11 +163,17 @@ grpcurl -plaintext -d '{"email":"alice@example.com"}' localhost:50051 auth.AuthS
 
 ### 8. Reset Password
 
-```
+```bash
 grpcurl -plaintext \
   -d '{"token":"<RESET_TOKEN>","newPassword":"N3wP@ss!"}' \
   localhost:50051 auth.AuthService/ResetPassword
 ```
+
+---
+
+## API Reference
+
+See detailed spec in [docs/API.md](docs/API.md).
 
 ---
 
@@ -159,6 +193,7 @@ grpcurl -plaintext \
 - **Password Reset Flow**: Stateless tokens stored in DB with TTL index.
 
 ---
+
 
 > **Next Steps**: Add unit & integration tests, improve error handling, and containerize service for production deployment.
 

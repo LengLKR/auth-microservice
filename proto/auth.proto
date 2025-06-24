@@ -3,78 +3,86 @@ syntax = "proto3";
 package auth;
 option go_package = "github.com/LengLKR/auth-microservice/internal/transport/proto;proto";
 
+// AuthService ให้บริการด้าน Authentication และ User Profile Management
 service AuthService {
+  // ลงทะเบียนผู้ใช้ใหม่
   rpc Register(RegisterRequest) returns (AuthResponse);
+  // เข้าสู่ระบบและรับ JWT
   rpc Login   (LoginRequest)    returns (AuthResponse);
+  // ออกจากระบบ (blacklist token)
   rpc Logout  (LogoutRequest)   returns (Empty);
 
-  //User Profile Management
+  // ดึงรายชื่อผู้ใช้ (filter + pagination)
   rpc ListUsers    (ListUsersRequest)    returns (ListUsersResponse);
-  rpc GetProfile   (GetProfileRequest)   returns (User);  
+  // ดึงข้อมูลโปรไฟล์ของผู้ใช้
+  rpc GetProfile   (GetProfileRequest)   returns (User);
+  // แก้ไขโปรไฟล์ของผู้ใช้
   rpc UpdateProfile(UpdateProfileRequest) returns (User);
+  // ลบ (soft-delete) โปรไฟล์ผู้ใช้
   rpc DeleteProfile(DeleteProfileRequest) returns (Empty);
-  //Password Reset
+  // ขอรหัสผ่านใหม่ (ส่ง token ไปทางอีเมลหรือ log)
   rpc RequestPasswordReset(PasswordResetRequest) returns (Empty);
+  // ใช้ token รีเซ็ตรหัสผ่าน
   rpc ResetPassword       (ResetPasswordRequest)  returns (Empty);
 }
 
 message RegisterRequest {
-  string email    = 1;
-  string password = 2;
+  string email    = 1; // อีเมลผู้ใช้
+  string password = 2; // รหัสผ่าน plaintext
 }
 message LoginRequest {
-  string email    = 1;
-  string password = 2;
+  string email    = 1; // อีเมลผู้ใช้
+  string password = 2; // รหัสผ่าน plaintext
 }
 message LogoutRequest {
-  string token = 1;
+  string token = 1;  // JWT token ที่ต้องการ blacklist
 }
 message AuthResponse {
-  string token = 1;
+  string token = 1;  // JWT token ที่ได้หลัง login/register
 }
-message Empty {}
+message Empty {}     // message เปล่า สำหรับ rpc ที่ไม่มี payload กลับ
 
 // User message for Profile
 message User {
-    string id        = 1;
-    string email     = 2;
-    string createdAt = 3;
+    string id        = 1; // ObjectID ของผู้ใช้ (hex)
+    string email     = 2; // อีเมลผู้ใช้
+    string createdAt = 3; // เวลาสร้างบัญชี (RFC3339)
     //ถ้าต้องการชื่อเล่นสามารถเพิ่มได้
     //string name    = 4;
 }
 
 message ListUsersRequest {
-    string filter_name  = 1;
-    string filter_email = 2;
+    string filter_name  = 1; // กรองด้วยชื่อ (regex, case-insensitive)
+    string filter_email = 2; // กรองด้วยอีเมล (regex, case-insensitive)
     int32 page          = 3; //เริ่มจาก 1
     int32 size          = 4; //ขนาดแต่ละหน้า
 }
 
 message ListUsersResponse  {
-    repeated User users = 1;
-    int32 total_count   = 2;
+    repeated User users = 1; // รายชื่อผู้ใช้ในหน้านั้น
+    int32 total_count   = 2;  // จำนวนทั้งหมด (ใช้สำหรับ pagination UI)
 }
 
 message GetProfileRequest{
-    string id = 1;
+    string id = 1; // ID ของผู้ใช้ที่ต้องการโปรไฟล์
 }
 
 message UpdateProfileRequest {
-    string id       = 1;
-    string email    = 2;
+    string id       = 1; // ID ของผู้ใช้ที่ต้องการแก้ไข
+    string email    = 2; // อีเมลใหม่
     //รับเฉพาะฟิลด์ที่อนุฐาติให้แก้ได้
 }
 
 message DeleteProfileRequest {
-    string id         = 1;
+    string id         = 1; // ID ของผู้ใช้ที่ต้องการลบ
 }
 
 message PasswordResetRequest {
-  string email        = 1;
+  string email        = 1; // อีเมลผู้ใช้ที่ต้องการ reset
 }
 
 message ResetPasswordRequest {
-  string token        = 1;
-  string new_password = 2;
+  string token        = 1; // reset token ที่ได้รับ
+  string new_password = 2; // รหัสผ่านใหม่
 
 }
